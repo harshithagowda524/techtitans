@@ -1,0 +1,206 @@
+<canvas id="matrix-bg"></canvas>
+    <canvas id="neural-canvas"></canvas>
+    <canvas id="network-canvas" style="display:none;"></canvas>
+    
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">⚡</div>
+                    <div>
+                        <span>PHISHCHAIN</span>
+                        <div class="logo-sub">PRO EDITION</div>
+                    </div>
+                </div>
+                <nav>
+                    <button class="nav-btn active" data-section="analyze">ANALYZE</button>
+                    <button class="nav-btn" data-section="ledger">LEDGER</button>
+                    <button class="nav-btn" data-section="network">NETWORK</button>
+                    <button class="nav-btn" data-section="stats">STATS</button>
+                    <button class="nav-btn" data-section="submit">SUBMIT</button>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Analyze Section -->
+        <section id="analyze-section" class="section active">
+            <div class="hero">
+                <h1>ADVANCED AI PHISHING DETECTION</h1>
+                <p>Machine learning-powered threat analysis with real-time blockchain verification</p>
+                <div class="hero-stats">
+                    <div class="hero-stat">
+                        <div class="hero-stat-value" id="hero-threats">0</div>
+                        <div class="hero-stat-label">THREATS BLOCKED</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="hero-stat-value">99.7%</div>
+                        <div class="hero-stat-label">DETECTION RATE</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="hero-stat-value">5</div>
+                        <div class="hero-stat-label">ACTIVE NODES</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="main-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">THREAT ANALYSIS ENGINE</div>
+                        <span class="card-badge">AI-POWERED</span>
+                    </div>
+                    
+                    <div class="input-section">
+                        <div class="input-tabs">
+                            <button class="input-tab active" data-type="url">URL</button>
+                            <button class="input-tab" data-type="email">EMAIL</button>
+                            <button class="input-tab" data-type="text">TEXT</button>
+                        </div>
+                        
+                        <textarea id="input-content" placeholder="Enter URL (e.g., http://paypal-secure.com.verify.xyz/login) or paste email content to analyze..."></textarea>
+                        
+                        <div class="input-options">
+                            <label class="input-option active">
+                                <input type="checkbox" checked> Full Scan
+                            </label>
+                            <label class="input-option">
+                                <input type="checkbox"> Deep Analysis
+                            </label>
+                            <label class="input-option">
+                                <input type="checkbox"> Heuristic Check
+                            </label>
+                        </div>
+                        
+                        <button class="btn-primary" id="analyze-btn">
+                            <span class="scan-line"></span>
+                            <span>⚡ ANALYZE THREAT</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Result Panel -->
+                    <div class="result-panel" id="result-panel">
+                        <div class="risk-gauge-container">
+                            <div class="risk-gauge">
+                                <div class="gauge-arc">
+                                    <svg viewBox="0 0 200 100">
+                                        <defs>
+                                            <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                <stop offset="0%" style="stop-color:#00ff88"/>
+                                                <stop offset="50%" style="stop-color:#ffaa00"/>
+                                                <stop offset="100%" style="stop-color:#ff3366"/>
+                                            </linearGradient>
+                                        </defs>
+                                        <path d="M 10 100 A 90 90 0 0 1 190 100" fill="none" stroke="rgba(0,255,136,0.2)" stroke-width="12" stroke-linecap="round"/>
+                                        <path id="gauge-path" d="M 10 100 A 90 90 0 0 1 190 100" fill="none" stroke="url(#gaugeGradient)" stroke-width="12" stroke-linecap="round" stroke-dasharray="283" stroke-dashoffset="283"/>
+                                    </svg>
+                                </div>
+                                <div class="gauge-value" id="risk-score">0</div>
+                                <div class="gauge-label">RISK SCORE</div>
+                            </div>
+                        </div>
+                        
+                        <div class="result-status" id="result-status">ANALYZING</div>
+                        
+                        <div class="confidence-bar">
+                            <span class="confidence-label">AI Confidence</span>
+                            <div class="confidence-track">
+                                <div class="confidence-fill" id="confidence-fill" style="width: 0%"></div>
+                            </div>
+                            <span class="confidence-value" id="confidence-value">0%</span>
+                        </div>
+                        
+                        <div class="indicators-section">
+                            <div class="indicators-title">⚠ DETECTED INDICATORS</div>
+                            <ul class="indicators-list" id="indicators-list"></ul>
+                        </div>
+                        
+                        <div class="recommendations" id="recommendations">
+                            <div class="rec-title">📋 RECOMMENDATIONS</div>
+                        </div>
+                        
+                        <div class="analysis-timeline">
+                            <div class="timeline-title">⏱ ANALYSIS TIMELINE</div>
+                            <div class="timeline-items" id="timeline-items"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">SYSTEM STATUS</div>
+                        <span class="card-badge">LIVE</span>
+                    </div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card primary">
+                            <div class="stat-value" id="quick-threats">0</div>
+                            <div class="stat-label">THREATS DETECTED</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">5</div>
+                            <div class="stat-label">NETWORK NODES</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">100%</div>
+                            <div class="stat-label">UPTIME</div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 25px;">
+                        <div class="card-title" style="margin-bottom: 15px;">RECENT ACTIVITY</div>
+                        <div id="recent-activity"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Ledger Section -->
+        <section id="ledger-section" class="ledger-section">
+            <div class="hero">
+                <h1>DISTRIBUTED THREAT LEDGER</h1>
+                <p>Immutable blockchain records with multi-validator consensus</p>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">BLOCKCHAIN LEDGER</div>
+                    <div class="ledger-filters">
+                        <button class="filter-btn active" data-filter="all">ALL</button>
+                        <button class="filter-btn" data-filter="phishing">PHISHING</button>
+                        <button class="filter-btn" data-filter="malware">MALWARE</button>
+                        <button class="filter-btn" data-filter="scam">SCAM</button>
+                    </div>
+                </div>
+                <div class="blocks-container" id="blocks-container"></div>
+            </div>
+        </section>
+
+        <!-- Network Section -->
+        <section id="network-section" class="network-section">
+            <div class="hero">
+                <h1>THREAT INTELLIGENCE NETWORK</h1>
+                <p>Decentralized node verification and real-time threat sharing</p>
+            </div>
+            
+            <div class="network-map">
+                <canvas id="network-canvas-visible"></canvas>
+            </div>
+            
+            <div class="nodes-list" id="nodes-list"></div>
+        </section>
+
+        <!-- Stats Section -->
+        <section id="stats-section" class="stats-section">
+            <div class="hero">
+                <h1>NETWORK ANALYTICS</h1>
+                <p>Real-time threat intelligence metrics and visualization</p>
+            </div>
+            
+            <div class="stats-overview">
+                <div class="overview-card">
+                    <div class="overview-value" id="stat-total">0</div>
+                    <div class="overview-label">TOTAL THREATS</div>
+                </div>
+                <div class="overview-card">
+                    <div class="overview-value">5</div>
+                    <div class="overview-label">ACTIVE NODES</div
