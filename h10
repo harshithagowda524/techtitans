@@ -1,0 +1,603 @@
+  </div>
+                <div class="overview-card">
+                    <div class="overview-value">99.7%</div>
+                    <div class="overview-label">DETECTION RATE</div>
+           
+
+                    result.riskScore += 25;
+                    result.indicators.push({text: 'Payment/gift card request detected', severity: 'high'});
+                }
+
+                result.riskScore = Math.min(100, result.riskScore);
+                return result;
+            }
+
+            getAnalysisLog() {
+                return this.analysisLog;
+            }
+        }
+
+        // ======================= BLOCKCHAIN =======================
+        class Block {
+            constructor(index, timestamp, data, previousHash, nonce = 0) {
+                this.index = index;
+                this.timestamp = timestamp;
+                this.data = data;
+                this.previousHash = previousHash;
+                this.nonce = nonce;
+                this.hash = this.computeHash();
+            }
+
+            computeHash() {
+                const str = `${this.index}${this.timestamp}${JSON.stringify(this.data)}${this.previousHash}${this.nonce}`;
+                let hash = 0;
+                for (let i = 0; i < str.length; i++) {
+                    const char = str.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash = hash & hash;
+                }
+                return Math.abs(hash).toString(16).padStart(64, '0').substring(0, 64);
+            }
+
+            mineBlock(difficulty) {
+                const target = '0'.repeat(difficulty);
+                while (this.hash.substring(0, difficulty) !== target) {
+                    this.nonce++;
+                    this.hash = this.computeHash();
+                }
+            }
+        }
+
+        class Blockchain {
+            constructor() {
+                this.chain = [];
+                this.difficulty = 2;
+                this.validators = ['node-alpha', 'node-beta', 'node-gamma', 'node-delta', 'node-epsilon'];
+                this.pendingTransactions = [];
+                this.createGenesisBlock();
+            }
+
+            createGenesisBlock() {
+                const genesisData = {
+                    type: 'genesis',
+                    message: 'PhishChain Pro Threat Ledger Initialized',
+                    network: 'PhishChain Pro v2.0',
+                    consensus: 'Proof of Authority'
+                };
+                this.chain.push(new Block(0, new Date().toISOString(), genesisData, '0'.repeat(64)));
+            }
+
+            addBlock(threatData) {
+                const lastBlock = this.chain[this.chain.length - 1];
+                const newIndex = this.chain.length;
+                const timestamp = new Date().toISOString();
+                
+                const blockData = {
+                    threat: threatData,
+                    validators: this.validators.slice(0, 3),
+                    signatures: this.validators.slice(0, 3).map((v, i) => {
+                        const msg = `${newIndex}${timestamp}${JSON.stringify(threatData)}${v}`;
+                        let hash = 0;
+                        for (let j = 0; j < msg.length; j++) {
+                            hash = ((hash << 5) - hash) + msg.charCodeAt(j);
+                            hash = hash & hash;
+                        }
+                        return Math.abs(hash).toString(16).substring(0, 16);
+                    }),
+                    merkleRoot: this.computeMerkleRoot(threatData)
+                };
+                
+                const newBlock = new Block(newIndex, timestamp, blockData, lastBlock.hash);
+                this.chain.push(newBlock);
+                
+                const activity = {
+                    content: threatData.content?.substring(0, 50) || 'New threat',
+                    type: threatData.type,
+                    time: new Date().toLocaleTimeString()
+                };
+                addRecentActivity(activity);
+                
+                return newBlock;
+            }
+
+            computeMerkleRoot(data) {
+                const str = JSON.stringify(data);
+                let hash = 0;
+                for (let i = 0; i < str.length; i++) {
+                    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+                    hash = hash & hash;
+                }
+                return Math.abs(hash).toString(16).substring(0, 16);
+            }
+
+            getLedger(limit = 30) {
+                return this.chain.slice(-limit);
+            }
+
+            verifyChain() {
+                for (let i = 1; i < this.chain.length; i++) {
+                    if (this.chain[i].previousHash !== this.chain[i-1].hash) return false;
+                    if (this.chain[i].hash !== this.chain[i].computeHash()) return false;
+                }
+                return true;
+            }
+
+            getStats() {
+                let totalRisk = 0;
+                const threatTypes = {};
+                
+                for (let i = 1; i < this.chain.length; i++) {
+                    const threat = this.chain[i].data.threat || {};
+                    totalRisk += threat.riskScore || 0;
+                    const type = threat.type || 'unknown';
+                    threatTypes[type] = (threatTypes[type] || 0) + 1;
+                }
+                
+                const validBlocks = this.chain.length - 1;
+                return {
+                    total: validBlocks,
+                    avgRisk: validBlocks > 0 ? Math.round(totalRisk / validBlocks) : 0,
+                    types: threatTypes
+                };
+            }
+        }
+
+        // ======================= NETWORK VISUALIZATION =======================
+        class NetworkVisualizer {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.nodes = [];
+                this.connections = [];
+                this.initNodes();
+            }
+
+            initNodes() {
+                const nodeNames = [
+                    {name: 'node-alpha', location: 'US-East'},
+                    {name: 'node-beta', location: 'EU-West'},
+                    {name: 'node-gamma', location: 'Asia-Pacific'},
+                    {name: 'node-delta', location: 'US-West'},
+                    {name: 'node-epsilon', location: 'South-America'}
+                ];
+
+                const centerX = this.canvas.width / 2;
+                const centerY = this.canvas.height / 2;
+                const radius = Math.min(centerX, centerY) - 50;
+
+                nodeNames.forEach((n, i) => {
+                    const angle = (i / nodeNames.length) * Math.PI * 2;
+                    this.nodes.push({
+                        x: centerX + Math.cos(angle) * radius,
+                        y: centerY + Math.sin(angle) * radius,
+                        ...n,
+                        status: 'online'
+                    });
+                });
+
+                for (let i = 0; i < this.nodes.length; i++) {
+                    for (let j = i + 1; j < this.nodes.length; j++) {
+                        if (Math.random() > 0.5) {
+                            this.connections.push([i, j]);
+                        }
+                    }
+                }
+            }
+
+            draw() {
+                this.ctx.fillStyle = 'rgba(6, 9, 15, 0.3)';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                this.ctx.strokeStyle = 'rgba(0, 212, 255, 0.2)';
+                this.connections.forEach(([i, j]) => {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(this.nodes[i].x, this.nodes[i].y);
+                    this.ctx.lineTo(this.nodes[j].x, this.nodes[j].y);
+                    this.ctx.stroke();
+                });
+
+                this.nodes.forEach((node, i) => {
+                    const pulse = Math.sin(Date.now() / 500 + i) * 0.3 + 0.7;
+                    
+                    this.ctx.beginPath();
+                    this.ctx.arc(node.x, node.y, 15, 0, Math.PI * 2);
+                    this.ctx.fillStyle = `rgba(0, 255, 136, ${pulse})`;
+                    this.ctx.fill();
+
+                    this.ctx.beginPath();
+                    this.ctx.arc(node.x, node.y, 8, 0, Math.PI * 2);
+                    this.ctx.fillStyle = '#00ff88';
+                    this.ctx.fill();
+
+                    this.ctx.font = '10px IBM Plex Mono';
+                    this.ctx.fillStyle = '#00d4ff';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText(node.name, node.x, node.y + 30);
+                });
+
+                requestAnimationFrame(() => this.draw());
+            }
+        }
+
+        // ======================= CHART =======================
+        class ThreatChart {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.data = {phishing: 35, malware: 20, scam: 30, other: 15};
+            }
+
+            draw() {
+                const { width, height } = this.canvas;
+                this.ctx.clearRect(0, 0, width, height);
+
+                const total = Object.values(this.data).reduce((a, b) => a + b, 0);
+                let startAngle = -Math.PI / 2;
+                const colors = ['#ff3366', '#ffaa00', '#00d4ff', '#00ff88'];
+                let i = 0;
+
+                for (const [key, value] of Object.entries(this.data)) {
+                    const sliceAngle = (value / total) * Math.PI * 2;
+                    
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(width/2, height/2);
+                    this.ctx.arc(width/2, height/2, 80, startAngle, startAngle + sliceAngle);
+                    this.ctx.closePath();
+                    this.ctx.fillStyle = colors[i % colors.length];
+                    this.ctx.fill();
+                    
+                    startAngle += sliceAngle;
+                    i++;
+                }
+
+                this.ctx.beginPath();
+                this.ctx.arc(width/2, height/2, 40, 0, Math.PI * 2);
+                this.ctx.fillStyle = '#0d1219';
+                this.ctx.fill();
+
+                this.ctx.font = 'bold 14px Orbitron';
+                this.ctx.fillStyle = '#00ff88';
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.fillText(total, width/2, height/2);
+            }
+
+            update(newData) {
+                this.data = newData;
+                this.draw();
+            }
+        }
+
+        // ======================= INITIALIZE =======================
+        const detector = new PhishingDetector();
+        const blockchain = new Blockchain();
+        let currentInputType = 'url';
+        let currentFilter = 'all';
+
+        // Sample threats
+        const sampleThreats = [
+            {content: 'http://paypal-secure-verify.xyz/login', riskScore: 92, type: 'phishing'},
+            {content: 'http://amazon-refund-processing.top/verify', riskScore: 85, type: 'phishing'},
+            {content: 'microsoft-support-auth.ru/verify', riskScore: 78, type: 'scam'},
+            {content: '192.168.1.100/admin/login.php', riskScore: 70, type: 'malware'},
+            {content: 'secure-bank-login.click/verify', riskScore: 88, type: 'phishing'},
+            {content: 'apple-id-verify.gq/auth', riskScore: 82, type: 'phishing'},
+            {content: 'netflix-gift-card.xyz/giveaway', riskScore: 75, type: 'scam'},
+            {content: 'facebook-login-verify.tk/page', riskScore: 79, type: 'phishing'},
+        ];
+
+        sampleThreats.forEach(t => blockchain.addBlock(t));
+
+        // Activity log
+        function addRecentActivity(activity) {
+            const container = document.getElementById('recent-activity');
+            const div = document.createElement('div');
+            div.style.cssText = 'padding: 10px; border-bottom: 1px solid var(--border); font-size: 0.8rem;';
+            div.innerHTML = `
+                <span style="color: var(--primary)">${activity.type}</span>
+                <span style="color: var(--text-dim)"> - ${activity.content}</span>
+                <span style="float: right; color: var(--text-dim)">${activity.time}</span>
+            `;
+            container.insertBefore(div, container.firstChild);
+            if (container.children.length > 5) container.removeChild(container.lastChild);
+        }
+
+        // Initialize charts
+        let networkViz, threatChart;
+
+        window.addEventListener('load', () => {
+            const networkCanvas = document.getElementById('network-canvas-visible');
+            if (networkCanvas) {
+                networkCanvas.width = networkCanvas.parentElement.offsetWidth;
+                networkCanvas.height = 400;
+                networkViz = new NetworkVisualizer(networkCanvas);
+                networkViz.draw();
+            }
+
+            const chartCanvas = document.getElementById('threat-chart');
+            if (chartCanvas) {
+                chartCanvas.width = chartCanvas.parentElement.offsetWidth;
+                chartCanvas.height = 200;
+                threatChart = new ThreatChart(chartCanvas);
+                threatChart.draw();
+            }
+        });
+
+        // ======================= NAVIGATION =======================
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.section, .ledger-section, .stats-section, .submit-section, .network-section').forEach(s => s.classList.remove('active'));
+                btn.classList.add('active');
+                
+                const section = btn.dataset.section + '-section';
+                if (btn.dataset.section === 'ledger') {
+                    document.getElementById('ledger-section').classList.add('active');
+                    renderLedger();
+                } else if (btn.dataset.section === 'network') {
+                    document.getElementById('network-section').classList.add('active');
+                    renderNodes();
+                    if (networkViz) networkViz.draw();
+                } else if (btn.dataset.section === 'stats') {
+                    document.getElementById('stats-section').classList.add('active');
+                    renderStats();
+                } else if (btn.dataset.section === 'submit') {
+                    document.getElementById('submit-section').classList.add('active');
+                } else {
+                    document.getElementById(section).classList.add('active');
+                }
+            });
+        });
+
+        // Input tabs
+        document.querySelectorAll('.input-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.input-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentInputType = tab.dataset.type;
+            });
+        });
+
+        // Input options
+        document.querySelectorAll('.input-option').forEach(opt => {
+            opt.addEventListener('click', () => {
+                opt.classList.toggle('active');
+            });
+        });
+
+        // Filter buttons
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                renderLedger();
+            });
+        });
+
+        // ======================= ANALYSIS =======================
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const inputContent = document.getElementById('input-content');
+        const resultPanel = document.getElementById('result-panel');
+
+        analyzeBtn.addEventListener('click', () => {
+            const content = inputContent.value.trim();
+            if (!content) return;
+
+            analyzeBtn.classList.add('scanning');
+            analyzeBtn.innerHTML = '<span class="scan-line"></span><span>⏳ ANALYZING...</span>';
+            resultPanel.classList.remove('visible');
+
+            setTimeout(() => {
+                const result = detector.analyze(content, currentInputType);
+                displayResult(result);
+
+                if (result.riskScore > 25) {
+                    blockchain.addBlock({
+                        content: content.substring(0, 200),
+                        riskScore: result.riskScore,
+                        type: result.categories[0] || currentInputType
+                    });
+                }
+
+                analyzeBtn.classList.remove('scanning');
+                analyzeBtn.innerHTML = '<span class="scan-line"></span><span>⚡ ANALYZE THREAT</span>';
+                updateStats();
+            }, 1800);
+        });
+
+        function displayResult(result) {
+            const riskScoreEl = document.getElementById('risk-score');
+            const resultStatus = document.getElementById('result-status');
+            const confidenceFill = document.getElementById('confidence-fill');
+            const confidenceValue = document.getElementById('confidence-value');
+            const indicatorsList = document.getElementById('indicators-list');
+            const timelineItems = document.getElementById('timeline-items');
+            const recommendations = document.getElementById('recommendations');
+            const gaugePath = document.getElementById('gauge-path');
+
+            let score = 0;
+            const targetScore = result.riskScore;
+            const duration = 30;
+            const interval = setInterval(() => {
+                score++;
+                const progress = score / 100;
+                const dashOffset = 283 * (1 - progress);
+                gaugePath.style.strokeDashoffset = dashOffset;
+
+                if (score < 40) {
+                    riskScoreEl.className = 'gauge-value risk-low';
+                } else if (score < 70) {
+                    riskScoreEl.className = 'gauge-value risk-medium';
+                } else {
+                    riskScoreEl.className = 'gauge-value risk-high';
+                }
+
+                riskScoreEl.textContent = score;
+                if (score >= targetScore) clearInterval(interval);
+            }, duration);
+
+            confidenceValue.textContent = result.confidence + '%';
+            confidenceFill.style.width = result.confidence + '%';
+            
+            resultStatus.textContent = result.recommendation.toUpperCase();
+            resultStatus.className = 'result-status status-' + result.recommendation;
+
+            indicatorsList.innerHTML = '';
+            if (result.indicators.length === 0) {
+                indicatorsList.innerHTML = '<li class="indicator-item"><span class="indicator-severity">No threats detected</span>Content appears safe</li>';
+            } else {
+                result.indicators.forEach((ind, i) => {
+                    setTimeout(() => {
+                        const li = document.createElement('li');
+                        li.className = 'indicator-item';
+                        li.style.animationDelay = (i * 0.1) + 's';
+                        li.innerHTML = `
+                            <span class="indicator-severity">${ind.severity.toUpperCase()}</span>
+                            <span>${ind.text}</span>
+                        `;
+                        indicatorsList.appendChild(li);
+                    }, i * 100);
+                });
+            }
+
+            const log = detector.getAnalysisLog();
+            timelineItems.innerHTML = '';
+            log.forEach((item, i) => {
+                setTimeout(() => {
+                    const div = document.createElement('div');
+                    div.className = 'timeline-item';
+                    div.innerHTML = `
+                        <span class="timeline-dot"></span>
+                        <span class="timeline-text">${item.action}</span>
+                        <span class="timeline-time">${item.time}ms</span>
+                    `;
+                    timelineItems.appendChild(div);
+                }, i * 80);
+            });
+
+            recommendations.innerHTML = '<div class="rec-title">📋 RECOMMENDATIONS</div>';
+            result.recommendations.forEach(rec => {
+                const div = document.createElement('div');
+                div.className = 'rec-item';
+                div.textContent = rec;
+                recommendations.appendChild(div);
+            });
+
+            resultPanel.classList.add('visible');
+            updateQuickStats();
+        }
+
+        function updateQuickStats() {
+            const stats = blockchain.getStats();
+            document.getElementById('quick-threats').textContent = stats.total;
+            document.getElementById('hero-threats').textContent = stats.total;
+        }
+
+        function updateStats() {
+            const stats = blockchain.getStats();
+            document.getElementById('stat-total').textContent = stats.total;
+            document.getElementById('stat-avg').textContent = stats.avgRisk + '%';
+            
+            if (threatChart) {
+                threatChart.update(stats.types);
+            }
+        }
+
+        // ======================= RENDER LEDGER =======================
+        function renderLedger() {
+            const container = document.getElementById('blocks-container');
+            const chain = blockchain.getLedger();
+            
+            container.innerHTML = '';
+            
+            const filteredChain = currentFilter === 'all' 
+                ? chain 
+                : chain.filter(b => (b.data.threat?.type || '') === currentFilter);
+            
+            if (filteredChain.length === 0) {
+                container.innerHTML = '<div class="loading">No threats found</div>';
+                return;
+            }
+
+            filteredChain.slice().reverse().forEach((block, i) => {
+                const threat = block.data.threat || {};
+                const div = document.createElement('div');
+                div.className = 'block-card';
+                div.innerHTML = `
+                    <div class="block-header">
+                        <span class="block-id">#BLOCK_${block.index.toString().padStart(4, '0')}</span>
+                        <span class="block-timestamp">${new Date(block.timestamp).toLocaleString()}</span>
+                    </div>
+                    <div class="block-hash">${block.hash}</div>
+                    <div class="block-data">
+                        <div class="data-point">
+                            <div class="data-label">CONTENT</div>
+                            <div class="data-value">${(threat.content || 'N/A').substring(0, 35)}...</div>
+                        </div>
+                        <div class="data-point">
+                            <div class="data-label">RISK SCORE</div>
+                            <div class="data-value" style="color: ${threat.riskScore > 70 ? 'var(--accent)' : threat.riskScore > 40 ? 'var(--warning)' : 'var(--primary)'}">${threat.riskScore || 0}</div>
+                        </div>
+                        <div class="data-point">
+                            <div class="data-label">TYPE</div>
+                            <div class="data-value">${threat.type?.toUpperCase() || 'UNKNOWN'}</div>
+                        </div>
+                        <div class="data-point">
+                            <div class="data-label">MERKLE</div>
+                            <div class="data-value">${block.data.merkleRoot}</div>
+                        </div>
+                    </div>
+                    <div class="block-footer">
+                        <div class="validators-list">
+                            ${(block.data.validators || []).map(v => `<span class="validator-badge">${v}</span>`).join('')}
+                        </div>
+                        <span class="verify-status">✓ VERIFIED</span>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // ======================= RENDER NODES =======================
+        function renderNodes() {
+            const container = document.getElementById('nodes-list');
+            const nodes = [
+                {name: 'node-alpha', location: 'US-East (Virginia)', uptime: '99.99%'},
+                {name: 'node-beta', location: 'EU-West (Ireland)', uptime: '99.95%'},
+                {name: 'node-gamma', location: 'Asia-Pacific (Tokyo)', uptime: '99.98%'},
+                {name: 'node-delta', location: 'US-West (Oregon)', uptime: '99.97%'},
+                {name: 'node-epsilon', location: 'South-America (São Paulo)', uptime: '99.92%'},
+            ];
+
+            container.innerHTML = '';
+            nodes.forEach(node => {
+                const div = document.createElement('div');
+                div.className = 'node-card';
+                div.innerHTML = `
+                    <div class="node-icon">⚡</div>
+                    <div class="node-info">
+                        <div class="node-name">${node.name}</div>
+                        <div class="node-status">${node.location} • ${node.uptime}</div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // ======================= RENDER STATS =======================
+        function renderStats() {
+            const stats = blockchain.getStats();
+            document.getElementById('stat-total').textContent = stats.total;
+            document.getElementById('stat-avg').textContent = stats.avgRisk + '%';
+
+            if (threatChart) {
+                threatChart.update(stats.types);
+            }
+
+            const integrity = blockchain.verifyChain();
+            document.getElementById('integrity-value').textContent = integrity ? 'VERIFIED' : 'COMPROMISED';
+            document.getElementById('integrity-value').style.color = integrity ? 'var(--primary)' : 'var(--accent)';
+        }
+
+        // ======================= SUBMIT ==================
